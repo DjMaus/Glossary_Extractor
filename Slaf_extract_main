@@ -1,0 +1,79 @@
+import streamlit as st
+import fitz  # PyMuPDF
+import xml.etree.ElementTree as ET
+import re
+
+# Function to extract glossary terms
+def extract_glossary(pdf_file):
+    glossary_terms = []
+    with fitz.open("pdf", pdf_file.read()) as pdf:
+        for page_num in range(230, 389 + 1):  # Adjust based on actual start and end pages
+            page = pdf[page_num]
+            blocks = page.get_text("blocks")
+
+            finnish_term = ""
+            swedish_terms = ""
+            description = ""
+            for block in blocks:
+                text = block[4]
+                
+                # Detect Finnish term (bolded)
+                if re.match(r"^[A-Za-zÅÄÖåäö]+$", text.strip()):
+                    finnish_term = text.strip()
+                
+                # Detect Swedish term(s) (italicized and indented)
+                elif text.startswith("    ") and text.strip().startswith(("*", "_")):  # Adjust if necessary
+                    swedish_terms = text.strip("*_").replace("; ", ";")
+                    
+                # Capture description following Swedish terms
+                elif finnish_term and swedish_terms:
+                    description += text.strip() + " "
+                    
+                    if re.match(r".*\.$", text.strip()):
+                        glossary_terms.append((finnish_term, swedish_terms, description.strip()))
+                        finnish_term, swedish_terms, description = "", "", ""
+    return glossary_terms
+
+# Function to create TBX XML structure
+def create_tbx(glossary_terms):
+    martif = ET.Element("martif")
+    text = ET.SubElement(martif, "text")
+    body = ET.SubElement(text, "body")
+
+    for finnish_term, swedish_terms, description in glossary_terms:
+        term_entry = ET.SubElement(body, "termEntry")
+
+        finnish_langset = ET.SubElement(term_entry, "langSet", {"xml:lang": "fi"})
+        finnish_term_elem = ET.SubElement(finnish_langset, "term")
+        finnish_term_elem.text = finnish_term
+
+        swedish_langset = ET.SubElement(term_entry, "langSet", {"xml:lang": "sv"})
+        swedish_term_elem = ET.SubElement(swedish_langset, "term")
+        swedish_term_elem.text = swedish_terms
+
+        if description:
+            descrip_elem = ET.SubElement(term_entry, "descrip")
+            descrip_elem.text = description
+
+    return ET.ElementTree(martif)
+
+# Streamlit interface
+st.title("PDF Glossary to TBX Converter")
+
+# Upload PDF
+uploaded_file = st.file_uploader("Upload a PDF file", type="pdf")
+
+if uploaded_file is not None:
+    glossary_terms = extract_glossary(uploaded_file)
+    
+    # Create TBX structure
+    tbx_tree = create_tbx(glossary_terms)
+    
+    # Save TBX to file and allow download
+    output_file = "glossary_output.tbx"
+    tbx_tree.write(output_file, encoding="utf-8", xml_declaration=True)
+    
+    # Display success message and download link
+    st.success("TBX file created successfully!")
+    with open(output_file, "rb") as file:
+        st.download_button(label="Download TBX file", data=file, file_name=output_file, mime="application/xml")
