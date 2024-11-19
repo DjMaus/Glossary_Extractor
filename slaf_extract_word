@@ -1,0 +1,82 @@
+import streamlit as st
+import docx  # python-docx library
+import xml.etree.ElementTree as ET
+import re
+
+# Function to extract glossary terms from Word document
+def extract_glossary(docx_file):
+    glossary_terms = []
+    doc = docx.Document(docx_file)
+    
+    # Track state for parsing
+    finnish_term = ""
+    swedish_terms = ""
+    description = ""
+    
+    for paragraph in doc.paragraphs[230:390]:  # Adjust page range as needed
+        text = paragraph.text.strip()
+        
+        # Detect Finnish term (assuming bolded text)
+        if paragraph.runs and paragraph.runs[0].bold and re.match(r"^[A-Za-zÅÄÖåäö]+$", text):
+            finnish_term = text
+        
+        # Detect Swedish term(s) (assuming italicized and indented text)
+        elif text.startswith("    ") and paragraph.runs and paragraph.runs[0].italic:
+            swedish_terms = text.strip().replace("; ", ";")
+        
+        # Capture description
+        elif finnish_term and swedish_terms:
+            description += text + " "
+            
+            if text.endswith('.'):
+                glossary_terms.append((finnish_term, swedish_terms, description.strip()))
+                finnish_term, swedish_terms, description = "", "", ""
+    
+    return glossary_terms
+
+# Function to create TBX XML structure
+def create_tbx(glossary_terms):
+    martif = ET.Element("martif")
+    text = ET.SubElement(martif, "text")
+    body = ET.SubElement(text, "body")
+    for finnish_term, swedish_terms, description in glossary_terms:
+        term_entry = ET.SubElement(body, "termEntry")
+        
+        # Finnish term
+        finnish_langset = ET.SubElement(term_entry, "langSet", {"xml:lang": "fi"})
+        finnish_term_elem = ET.SubElement(finnish_langset, "term")
+        finnish_term_elem.text = finnish_term
+        
+        # Swedish term
+        swedish_langset = ET.SubElement(term_entry, "langSet", {"xml:lang": "sv"})
+        swedish_term_elem = ET.SubElement(swedish_langset, "term")
+        swedish_term_elem.text = swedish_terms
+        
+        # Description
+        if description:
+            descrip_elem = ET.SubElement(term_entry, "descrip")
+            descrip_elem.text = description
+    
+    return ET.ElementTree(martif)
+
+# Streamlit interface
+st.title("Word Glossary to TBX Converter")
+
+# Upload Word document
+uploaded_file = st.file_uploader("Upload a Word document", type="docx")
+
+if uploaded_file is not None:
+    # Extract glossary terms
+    glossary_terms = extract_glossary(uploaded_file)
+    
+    # Create TBX structure
+    tbx_tree = create_tbx(glossary_terms)
+    
+    # Save TBX to file and allow download
+    output_file = "glossary_output.tbx"
+    tbx_tree.write(output_file, encoding="utf-8", xml_declaration=True)
+    
+    # Display success message and download link
+    st.success("TBX file created successfully!")
+    with open(output_file, "rb") as file:
+        st.download_button(label="Download TBX file", data=file, file_name=output_file, mime="application/xml")
