@@ -1,36 +1,22 @@
-import fitz  # PyMuPDF
+import pdfplumber
+from pdf2docx import Converter
 from docx import Document
 import os
 import tkinter as tk
 from tkinter import filedialog, messagebox
 
-# Function to convert PDF to Word for a specified range of pages
-def pdf_to_word(pdf_path, start_page, end_page, output_path):
-    # Initialize a document to write to
-    doc = Document()
-
-    # Open the PDF file
-    pdf_document = fitz.open(pdf_path)
-
-    # Ensure pages are within the valid range
-    start_page = max(start_page - 1, 0)  # Convert to 0-based index
-    end_page = min(end_page, pdf_document.page_count)  # Ensure it doesn't exceed total pages
-
-    # Loop through the specified page range
-    for page_num in range(start_page, end_page):
-        page = pdf_document[page_num]
-        
-        # Extract text from the page
-        page_text = page.get_text("text")
-        
-        # Add page content to Word document
-        doc.add_paragraph(page_text)
-
-    # Save the Word document at the user-specified location
-    doc.save(output_path)
-    pdf_document.close()
-
-    messagebox.showinfo("Success", f"PDF content from pages {start_page + 1} to {end_page} has been converted to Word.\nSaved as {output_path}")
+# Function to convert PDF to Word for a specified range of pages or the whole document
+def pdf_to_word(pdf_path, start_page, end_page, output_path, convert_whole_document):
+    if convert_whole_document:
+        # Convert the whole document
+        cv = Converter(pdf_path)
+        cv.convert(output_path)
+        cv.close()
+    else:
+        # Convert the specified page range to a Word document
+        cv = Converter(pdf_path)
+        cv.convert(output_path, start=start_page-1, end=end_page)
+        cv.close()
 
 # Function to open file dialog and get the PDF path
 def browse_pdf():
@@ -46,27 +32,32 @@ def browse_output():
 
 # Function to handle the conversion process
 def convert_pdf_to_word():
-    # Get the PDF path and page range from the user inputs
     pdf_path = entry_pdf_path.get()
     if not os.path.isfile(pdf_path):
-        messagebox.showerror("Error", "The specified PDF file does not exist.")
-        return
-    
-    try:
-        start_page = int(entry_start_page.get())
-        end_page = int(entry_end_page.get())
-    except ValueError:
-        messagebox.showerror("Error", "Please enter valid page numbers.")
-        return
-    
-    # Get the output file path
-    output_path = entry_output_path.get()
-    if not output_path:
-        messagebox.showerror("Error", "Please specify an output file location.")
+        messagebox.showerror("Error", "Please select a valid PDF file.")
         return
 
-    # Call the conversion function
-    pdf_to_word(pdf_path, start_page, end_page, output_path)
+    convert_whole_document = var_convert_whole_document.get()
+
+    if not convert_whole_document:
+        try:
+            start_page = int(entry_start_page.get())
+            end_page = int(entry_end_page.get())
+        except ValueError:
+            messagebox.showerror("Error", "Please enter valid start and end page numbers.")
+            return
+    else:
+        # Inform the user that the page range will be ignored
+        messagebox.showinfo("Info", "The whole document will be converted. The specified page range will be ignored.")
+        start_page = 1
+        end_page = None
+
+    output_path = entry_output_path.get()
+    if not output_path:
+        messagebox.showerror("Error", "Please specify an output file path.")
+        return
+
+    pdf_to_word(pdf_path, start_page, end_page, output_path, convert_whole_document)
 
 # Create the main window
 window = tk.Tk()
@@ -105,9 +96,14 @@ entry_output_path.grid(row=3, column=1, padx=10, pady=10)
 button_browse_output = tk.Button(window, text="Browse", command=browse_output)
 button_browse_output.grid(row=3, column=2, padx=10, pady=10)
 
+# Create and place the checkbox for converting the whole document
+var_convert_whole_document = tk.BooleanVar()
+checkbox_convert_whole_document = tk.Checkbutton(window, text="Convert Whole Document", variable=var_convert_whole_document)
+checkbox_convert_whole_document.grid(row=4, column=0, columnspan=2, padx=10, pady=10)
+
 # Create and place the Convert button
-button_convert = tk.Button(window, text="Convert PDF to Word", command=convert_pdf_to_word)
-button_convert.grid(row=4, column=0, columnspan=3, pady=20)
+button_convert = tk.Button(window, text="Convert", command=convert_pdf_to_word)
+button_convert.grid(row=5, column=0, columnspan=3, pady=20)
 
 # Run the application
 window.mainloop()
