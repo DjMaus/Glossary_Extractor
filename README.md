@@ -1,37 +1,47 @@
-Bilingual Glossary Converter
+# PDF Text Extractor and Converter
 
-This project extracts bilingual glossary content from a PDF file, converts it to a formatted Word document, and exports the structured content to an Excel file with labeled columns for "Finnish Term," "Swedish Term," and "Description."
+This project provides a user-friendly interface for converting PDF documents to Word format, with the ability to later process the content into Excel. The tool features page range selection and real-time conversion progress tracking.
 
-Project Overview
+## Features
 
-1. Extract Text from PDF: 
-   - Read each page of the PDF using the `PyMuPDF` library to capture text, preserving the glossary’s original formatting.
-   
-2. Convert to Word Document:
-   - Using `python-docx`, write the extracted text to a Word document, with optional formatting for headings or specific terms as needed.
+- GUI-based PDF to Word converter
+- Page range selection for partial document conversion
+- Real-time conversion progress tracking
+- Support for converting entire documents
+- Excel export functionality (coming soon)
 
-3. Export to Excel:
-   - Parse the Word content and use `pandas` and `openpyxl` to populate an Excel file with labeled columns for "Finnish Term," "Swedish Term," and "Description."
-
-Prerequisites
+## Prerequisites
 
 - Python 3.x
-- Libraries: `pymupdf`, `python-docx`, `pandas`, `openpyxl`
+- Required libraries:
+  ```bash
+  pip install pdf2docx pdfplumber python-docx pandas openpyxl tkinter
+  ```
 
-Install dependencies:
-```bash
-pip install pymupdf python-docx pandas openpyxl
-```
+## Usage
 
-Step-by-Step Instructions
+1. **PDF to Word Conversion**:
+   - Run `improved_pdf_to_word.py`
+   - Select your PDF file using the browse button
+   - Choose between:
+     - Converting specific pages (enter start and end page numbers)
+     - Converting the entire document (check "Convert Whole Document")
+   - Select output location for the Word file
+   - Click "Convert" and monitor the progress
 
-1.  **PDF to Word**: Run the `pdf_to_word.py` script to extract text from the PDF and save it in a Word document.
-   
-2. **Word to Excel**: Run the `word_to_excel.py` script to read the Word file and export glossary entries into an Excel sheet with labeled columns.
+2. **Word to Excel** (Feature in development):
+   - Will allow structured export of Word content to Excel format
+   - Support for custom column mapping
+   - Data organization and categorization
 
-## File Structure
+## Project Structure
 
-- `pdf_to_word.py`: Script to convert PDF content to Word.
-- `word_to_excel.py`: Script to parse Word content and export to Excel.
-- `output_glossary.docx`: The intermediate Word document generated from the PDF.
-- `glossary_output.xlsx`: The final Excel file with structured terms.
+- `improved_pdf_to_word.py`: GUI application for PDF to Word conversion
+- `word_to_excel.py`: Script for converting Word content to Excel (upcoming)
+
+## Future Enhancements
+
+- Custom formatting options for Word output
+- Batch processing capabilities
+- Advanced Excel export features
+- OCR support for scanned documents
