@@ -85,7 +85,7 @@ Enable users to extract text from a PDF, organize the data manually in Word by h
 
 ### **Timeline**
 
-| **Task**                              | **Estimated Time** | **Notes**                                      |
+| **Task**                              | **Estimated Working Time** | **Notes**                                      |
 |---------------------------------------|--------------------|-----------------------------------------------|
 | PDF Extraction Script                 | 1-2 days           | Ensure robust extraction for glossary format. |
 | Word Template Creation                | 1 day              | Define styles and add usage instructions.     |
